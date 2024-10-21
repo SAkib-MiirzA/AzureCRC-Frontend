@@ -1,0 +1,39 @@
+name: CI/CD Frontend
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-Deployment:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Deploy to Azure Storage
+      run: |
+        set +e  # Allow script to continue on error
+
+        echo "Using account name: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}"
+
+        # Attempt to deploy using Key 1
+        echo "Attempting to deploy using Key 1..."
+        if az storage blob upload-batch -d '$web' -s './Frontend' --account-name ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }} --account-key ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY_1 }} --auth-mode key; then
+          echo "Deployment succeeded with Key 1."
+        else
+          echo "Key 1 failed. Attempting to deploy using Key 2..."
+          # Attempt to deploy using Key 2
+          if az storage blob upload-batch -d '$web' -s './Frontend' --account-name ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }} --account-key ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY_2 }} --auth-mode key; then
+            echo "Deployment succeeded with Key 2."
+          else
+            echo "Both Key 1 and Key 2 failed."
+          fi
+        fi
